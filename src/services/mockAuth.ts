@@ -88,7 +88,7 @@ const CREDENTIALS: Record<string, string> = {
   zhangwei: "123456",
   lina: "123456",
   chenyu: "123456",
-  deploybot: "123456",
+  "deploy-bot": "123456",
   wangsong: "123456",
 }
 

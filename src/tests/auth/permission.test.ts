@@ -40,6 +40,13 @@ describe("authStore — 认证与权限", () => {
     expect(useAuthStore.getState().user).toBeNull()
   })
 
+  it("login() deploy-bot 演示账号可登录", async () => {
+    await useAuthStore.getState().login("deploy-bot", "123456")
+    const state = useAuthStore.getState()
+    expect(state.user?.username).toBe("deploy-bot")
+    expect(state.token).toMatch(/^mock_jwt_/)
+  })
+
   it("logout() 清空会话", async () => {
     await useAuthStore.getState().login("admin", "admin123")
     useAuthStore.getState().logout()
