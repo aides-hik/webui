@@ -1,0 +1,30 @@
+version: 2
+updates:
+  # 依赖升级 + 安全补丁(pnpm 由 npm 生态识别 pnpm-lock.yaml)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    versioning-strategy: "auto"
+    # 将 minor/patch 升级分组,减少 PR 噪音;major 升级单独开 PR
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions 版本也会过期(如 checkout@v4),一并自动升级
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5

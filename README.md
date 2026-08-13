@@ -1,5 +1,10 @@
 # WebUI Platform
 
+[![CI](https://github.com/aides-hik/webui/actions/workflows/ci.yml/badge.svg)](https://github.com/aides-hik/webui/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/aides-hik/webui/actions/workflows/codeql.yml/badge.svg)](https://github.com/aides-hik/webui/actions/workflows/codeql.yml)
+[![Lighthouse](https://github.com/aides-hik/webui/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/aides-hik/webui/actions/workflows/lighthouse.yml)
+[![Vercel](https://img.shields.io/badge/Vercel-production-000000?logo=vercel&logoColor=white)](https://webui-livid.vercel.app)
+
 服务器 / Docker 集群管理控制台前端。基于 React + TypeScript + Vite,内置 RBAC 权限模型,覆盖服务器、容器、监控、日志、应用、审计等模块。
 
 > 当前版本默认运行在 **Mock 模式**(内置模拟数据,无需后端);配置 `VITE_API_BASE_URL` 后自动切换到真实 REST/WebSocket 后端。
@@ -76,6 +81,9 @@ pnpm preview          # 预览生产构建
 | 阶段 | 工具 | 触发 | 内容 |
 | --- | --- | --- | --- |
 | 质量门禁 | GitHub Actions `ci.yml` | push `main`、PR | 类型检查 → 测试 + 覆盖率 → 权限模块 100% 覆盖率校验 → 生产构建 |
+| 安全扫描 | GitHub Actions `codeql.yml` | push `main`、PR、每周定时 | CodeQL 扩展安全查询(JS/TS) |
+| 体验门禁 | GitHub Actions `lighthouse.yml` | push `main`、PR | 性能 ≥ 85、可访问性 ≥ 90、最佳实践 ≥ 90 |
+| 依赖更新 | Dependabot | 每周 | npm(pnpm)与 Actions 依赖升级 / 安全补丁 |
 | 生产部署 | Vercel 原生集成 | push `main` | 构建并部署 `dist/` |
 | 预览部署 | Vercel 原生集成 | PR | 生成 Preview 并评论预览链接 |
 
