@@ -21,10 +21,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup pnpm
-        uses: pnpm/setup@v2
+        uses: pnpm/action-setup@v6
         with:
-          # 版本自动读取 package.json 的 packageManager 字段
-          install: false
+          # 项目用 pnpm 10(pnpm/setup 仅支持 11+),显式指定与 packageManager 一致的版本
+          version: 10.33.2
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
