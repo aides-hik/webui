@@ -1,0 +1,136 @@
+/* ============================================================
+   WebUI Design Tokens — 设计变量单一事实源
+   ------------------------------------------------------------
+   所有页面与组件禁止使用随意颜色/字号/间距值,
+   一律通过本文件定义的 Token 消费。
+   主题切换 = 切换 CSS 变量(已支持 light / dark / system)。
+   ============================================================ */
+
+:root {
+  /* ========== 颜色体系(HSL 语义色) ========== */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+  --ring-soft: 222.2 47.4% 11.2% / 0.08;
+
+  /* 状态色(运维语义) */
+  --success: 142 71% 45%;
+  --success-foreground: 210 40% 98%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 222.2 47.4% 11.2%;
+
+  /* ========== 排版 ========== */
+  --font-sans: "Inter", "PingFang SC", "Microsoft YaHei", system-ui,
+    -apple-system, "Segoe UI", sans-serif;
+  /* 字号(语义层级) */
+  --text-display: clamp(2.5rem, 5vw, 3.5rem); /* 首页大标题 */
+  --text-title: clamp(1.75rem, 3vw, 2.25rem); /* 页面标题 */
+  --text-heading: 1.5rem; /* 区块标题 */
+  --text-subheading: 1.125rem; /* 子标题 */
+  --text-body: 1rem; /* 正文 */
+  --text-body-sm: 0.875rem; /* 辅助文字 */
+  --text-label: 0.8125rem; /* Label */
+  --text-caption: 0.75rem; /* 注释/元信息 */
+  /* 行高(与字号一一对应) */
+  --leading-display: 1.1;
+  --leading-title: 1.2;
+  --leading-heading: 1.3;
+  --leading-body: 1.7;
+  --leading-label: 1.4;
+
+  /* ========== 间距 ========== */
+  --space-page: clamp(1.25rem, 4vw, 2rem); /* 页面左右 padding */
+  --space-section: clamp(3rem, 8vw, 6rem); /* Section 垂直间距 */
+  --space-card: 1.5rem; /* 卡片间距 / 卡片内 padding */
+  --space-grid: 1.5rem; /* Grid gap */
+  --space-stack: 1rem; /* 元素垂直堆叠间距 */
+
+  /* ========== 圆角(大圆角方向) ========== */
+  --radius: 1rem; /* lg */
+  /* md = calc(1rem - 2px), sm = calc(1rem - 4px),由 Tailwind 消费 */
+
+  /* ========== 阴影(柔和分层, Linear 风格) ========== */
+  --shadow-soft-sm: 0 1px 2px rgb(15 23 42 / 0.04), 0 2px 8px rgb(15 23 42 / 0.04);
+  --shadow-soft: 0 2px 4px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.06);
+  --shadow-soft-lg: 0 4px 8px rgb(15 23 42 / 0.04), 0 16px 48px rgb(15 23 42 / 0.1);
+
+  /* ========== 玻璃效果(visionOS 风格) ========== */
+  --glass-bg: rgb(255 255 255 / 0.65);
+  --glass-border: rgb(255 255 255 / 0.55);
+  --glass-blur: 16px;
+
+  /* ========== 渐变(品牌装饰) ========== */
+  --gradient-brand: linear-gradient(
+    135deg,
+    hsl(222.2 47.4% 11.2%),
+    hsl(243 75% 59%)
+  );
+
+  /* ========== 动效 ========== */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1); /* 出场缓动,Linear/Aceternity 风格 */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1); /* 常规缓动 */
+  --duration-fast: 150ms;
+  --duration-base: 300ms;
+  --duration-slow: 600ms;
+}
+
+/* ========== Dark Mode ========== */
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 212.7 26.8% 83.9%;
+  --ring-soft: 210 40% 98% / 0.1;
+
+  /* 状态色(暗色) */
+  --success: 142 69% 58%;
+  --success-foreground: 222.2 47.4% 11.2%;
+  --warning: 48 96% 53%;
+  --warning-foreground: 222.2 47.4% 11.2%;
+
+  /* 暗色下阴影更深,层次更明显 */
+  --shadow-soft-sm: 0 1px 2px rgb(0 0 0 / 0.3), 0 2px 8px rgb(0 0 0 / 0.3);
+  --shadow-soft: 0 2px 4px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.35);
+  --shadow-soft-lg: 0 4px 8px rgb(0 0 0 / 0.4), 0 16px 48px rgb(0 0 0 / 0.5);
+
+  /* 暗色玻璃:深色半透明 */
+  --glass-bg: rgb(15 23 42 / 0.5);
+  --glass-border: rgb(255 255 255 / 0.08);
+
+  --gradient-brand: linear-gradient(
+    135deg,
+    hsl(222.2 84% 4.9%),
+    hsl(243 75% 59%)
+  );
+}

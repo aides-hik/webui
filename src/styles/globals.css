@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 设计变量(颜色/排版/间距/圆角/阴影/玻璃/动效)统一来自 design-tokens.css */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+/* ============================================================
+   Typography 规范 — 语义化排版类
+   页面/组件禁止直接写任意字号,统一使用以下层级:
+   text-display   首页大标题(Hero)
+   text-title     页面标题
+   text-heading   区块标题
+   text-subheading 子标题
+   text-body      正文
+   text-body-sm   辅助文字
+   text-label     Label(大写)
+   text-caption   注释/元信息
+   ============================================================ */
+@layer components {
+  .text-display {
+    font-size: var(--text-display);
+    font-weight: 700;
+    line-height: var(--leading-display);
+    letter-spacing: -0.025em;
+  }
+
+  .text-title {
+    font-size: var(--text-title);
+    font-weight: 700;
+    line-height: var(--leading-title);
+    letter-spacing: -0.02em;
+  }
+
+  .text-heading {
+    font-size: var(--text-heading);
+    font-weight: 600;
+    line-height: var(--leading-heading);
+    letter-spacing: -0.01em;
+  }
+
+  .text-subheading {
+    font-size: var(--text-subheading);
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .text-body {
+    font-size: var(--text-body);
+    font-weight: 400;
+    line-height: var(--leading-body);
+  }
+
+  .text-body-sm {
+    font-size: var(--text-body-sm);
+    font-weight: 400;
+    line-height: 1.6;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .text-label {
+    font-size: var(--text-label);
+    font-weight: 500;
+    line-height: var(--leading-label);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .text-caption {
+    font-size: var(--text-caption);
+    font-weight: 400;
+    line-height: 1.5;
+    color: hsl(var(--muted-foreground));
+  }
+}
+
+/* ============================================================
+   Motion 规范 — 微动画工具类
+   配合 AnimatedContainer 使用;默认 `both` 填充,
+   未触发时保持初始态(隐藏),进入视口后播放。
+   ============================================================ */
+@layer utilities {
+  .anim-fade-up {
+    animation: anim-fade-up var(--duration-base) var(--ease-out-expo) both;
+  }
+  .anim-fade-down {
+    animation: anim-fade-down var(--duration-base) var(--ease-out-expo) both;
+  }
+  .anim-fade-in {
+    animation: anim-fade-in var(--duration-base) var(--ease-out-expo) both;
+  }
+  .anim-scale-in {
+    animation: anim-scale-in var(--duration-base) var(--ease-out-expo) both;
+  }
+  .anim-float {
+    animation: anim-float 6s var(--ease-out-quart) infinite;
+  }
+  .anim-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .anim-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 0.35),
+      transparent
+    );
+    animation: anim-shimmer 2.5s var(--ease-out-quart) infinite;
+  }
+}
+
+@keyframes anim-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes anim-fade-down {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes anim-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes anim-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes anim-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes anim-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
