@@ -26,10 +26,11 @@ jobs:
           # 项目用 pnpm 10(pnpm/setup 仅支持 11+),显式指定与 packageManager 一致的版本
           version: 10.33.2
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # jsdom 30 要求 Node ^22.22.2 || ^24.15.0 || >=26
+          node-version: 24
           cache: pnpm # 基于 pnpm-lock.yaml 的依赖缓存
 
       - name: Install dependencies
