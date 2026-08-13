@@ -13,6 +13,7 @@ dist-ssr
 coverage
 .reasonix
 .vercel
+.lighthouseci
 *.local
 
 # Environment variables(never commit secrets)
