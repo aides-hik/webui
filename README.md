@@ -24,6 +24,8 @@ React 18 · TypeScript · Vite · Tailwind CSS · Radix UI · Zustand · TanStac
 
 ## 快速开始
 
+> **环境要求**:Node.js `^22.22.2` 或 `^24.15.0`(jsdom 30 的 engines 要求)。CI 与 Vercel 均使用 Node 24。
+
 ```bash
 pnpm install          # 安装依赖
 pnpm dev              # 本地开发(http://localhost:5173)
