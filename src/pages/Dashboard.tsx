@@ -1,3 +1,6 @@
+import { useQuery } from "@tanstack/react-query"
+
+import { monitoringApi } from "@/api/monitoring"
 import { ActivityTimeline } from "@/components/dashboard/ActivityTimeline"
 import { DashboardStats } from "@/components/dashboard/DashboardStats"
 import { QuickActions } from "@/components/dashboard/QuickActions"
@@ -10,15 +13,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useMetrics } from "@/hooks/useMetrics"
 import { useServers } from "@/hooks/useServers"
-import { activityEvents } from "@/lib/mock-data"
 
 /**
  * 控制台首页 — 全局资源总览
  * 数据来源:useServers(Zustand store + WS 实时)/ useMetrics(TanStack Query + WS 实时)
+ * 活动事件经 monitoringApi.getActivityEvents
  */
 export function Dashboard() {
   const { servers, loading } = useServers()
   const { data: metrics, isLoading: metricsLoading } = useMetrics("24h")
+  const { data: events } = useQuery({
+    queryKey: ["activity-events"],
+    queryFn: () => monitoringApi.getActivityEvents(),
+    staleTime: 60_000,
+  })
 
   return (
     <PageContainer size="wide" className="py-2">
@@ -110,7 +118,7 @@ export function Dashboard() {
             <CardTitle className="text-sm">最近事件</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <ActivityTimeline events={activityEvents.slice(0, 6)} />
+            <ActivityTimeline events={(events ?? []).slice(0, 6)} />
           </CardContent>
         </Card>
       </Section>

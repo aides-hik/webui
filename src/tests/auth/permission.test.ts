@@ -5,7 +5,7 @@ import { mockUsers } from "@/services/mockAuth"
 import { auditLogs } from "@/services/mockAudit"
 
 function resetAuth() {
-  useAuthStore.setState({ user: null, token: null })
+  useAuthStore.setState({ user: null, token: null, initializing: false })
   localStorage.clear()
 }
 
@@ -88,6 +88,26 @@ describe("authStore — 认证与权限", () => {
     await useAuthStore.getState().loginAs("lina")
     expect(useAuthStore.getState().user?.username).toBe("lina")
     expect(useAuthStore.getState().hasPermission("docker.manage", "srv-staging-web-01")).toBe(true)
+  })
+
+  it("init() 用持久化 token 恢复会话;无效 token 清除会话", async () => {
+    await useAuthStore.getState().login("admin", "admin123")
+    const token = useAuthStore.getState().token!
+
+    // 模拟页面刷新:localStorage 有 token,user 丢失,进入初始化
+    useAuthStore.setState({ user: null, token, initializing: true })
+    await useAuthStore.getState().init()
+
+    const restored = useAuthStore.getState()
+    expect(restored.user?.username).toBe("admin")
+    expect(restored.initializing).toBe(false)
+
+    // 无效 token → 会话被清除
+    useAuthStore.setState({ user: null, token: "invalid-token", initializing: true })
+    await useAuthStore.getState().init()
+    expect(useAuthStore.getState().user).toBeNull()
+    expect(useAuthStore.getState().token).toBeNull()
+    expect(localStorage.getItem("webui-auth")).toBeNull()
   })
 
   it("登录与登出写入审计记录", async () => {

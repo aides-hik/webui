@@ -1,15 +1,16 @@
 /* ============================================================
    认证 Store(Zustand)
    - 当前用户 / Token / 角色 / 权限
-   - login / logout / hasPermission / hasRole
-   - 持久化到 localStorage(刷新保持登录)
+   - login / logout / loginAs / init(会话恢复)
+   - 持久化 token 到 localStorage;启动时经 authApi.me() 校验恢复
+   - 登录/登录失败审计由 api/auth mock 实现写入;登出审计为本客户端事件
    ============================================================ */
 
 import { create } from "zustand"
 
 import { setAuthTokenProvider, setOnUnauthorized } from "@/api/client"
-import * as mockAuth from "@/services/mockAuth"
-import { recordAudit } from "@/services/mockAudit"
+import { authApi } from "@/api/auth"
+import { auditApi } from "@/api/audit"
 import { userHasPermission } from "@/services/permissionService"
 import type { PermissionId, Role, User } from "@/types/auth"
 
@@ -18,7 +19,10 @@ const AUTH_KEY = "webui-auth"
 interface AuthState {
   user: User | null
   token: string | null
+  /** 持久化会话恢复中(启动时 me() 校验,期间受保护路由显示加载态) */
+  initializing: boolean
 
+  init: () => Promise<void>
   login: (username: string, password: string) => Promise<void>
   logout: () => void
   /** 权限判断;带 resourceId 时叠加资源范围(团队/分配)校验 */
@@ -28,52 +32,55 @@ interface AuthState {
   loginAs: (username: string) => Promise<void>
 }
 
-function loadPersistedUser(): { user: User | null; token: string | null } {
+function loadToken(): string | null {
   try {
     const raw = localStorage.getItem(AUTH_KEY)
-    if (!raw) return { user: null, token: null }
-    const { userId, token } = JSON.parse(raw) as { userId: string; token: string }
-    const user = mockAuth.mockUsers.find((u) => u.id === userId) ?? null
-    return { user: user ? { ...user, roles: [...user.roles] } : null, token }
+    if (!raw) return null
+    const { token } = JSON.parse(raw) as { userId?: string; token?: string }
+    return token ?? null
   } catch {
-    return { user: null, token: null }
+    return null
   }
 }
 
-const persisted = loadPersistedUser()
+const persistedToken = loadToken()
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: persisted.user,
-  token: persisted.token,
+  user: null,
+  token: persistedToken,
+  initializing: persistedToken !== null,
+
+  /** 启动时校验持久化会话;token 无效 / 用户被禁用时清除会话 */
+  init: async () => {
+    const token = get().token
+    if (!token) {
+      set({ initializing: false })
+      return
+    }
+    try {
+      const user = await authApi.me(token)
+      if (user) {
+        set({ user, initializing: false })
+      } else {
+        localStorage.removeItem(AUTH_KEY)
+        set({ user: null, token: null, initializing: false })
+      }
+    } catch {
+      localStorage.removeItem(AUTH_KEY)
+      set({ user: null, token: null, initializing: false })
+    }
+  },
 
   login: async (username, password) => {
-    try {
-      const { user, token } = await mockAuth.login(username, password)
-      set({ user, token })
-      localStorage.setItem(AUTH_KEY, JSON.stringify({ userId: user.id, token }))
-      recordAudit({
-        userId: user.id,
-        username: user.username,
-        action: "auth.login",
-        resourceType: "console",
-      })
-    } catch (err) {
-      recordAudit({
-        userId: "-",
-        username,
-        action: "auth.login_failed",
-        resourceType: "console",
-        status: "failed",
-        metadata: { reason: err instanceof Error ? err.message : "未知错误" },
-      })
-      throw err
-    }
+    const { user, token } = await authApi.login(username, password)
+    set({ user, token })
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ userId: user.id, token }))
   },
 
   logout: () => {
     const user = get().user
     if (user) {
-      recordAudit({
+      auditApi.record({
         userId: user.id,
         username: user.username,
         action: "auth.logout",
@@ -97,19 +104,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   loginAs: async (username) => {
-    const user = mockAuth.mockUsers.find((u) => u.username === username)
-    if (!user) throw new Error(`用户不存在: ${username}`)
-    if (user.status === "disabled") throw new Error("该账号已被禁用")
-    const token = `mock_jwt_${user.username}_${Date.now().toString(36)}`
-    user.lastLogin = new Date().toISOString()
-    set({ user: { ...user, roles: [...user.roles] }, token })
+    const { user, token } = await authApi.loginAs(username)
+    set({ user, token })
     localStorage.setItem(AUTH_KEY, JSON.stringify({ userId: user.id, token }))
-    recordAudit({
-      userId: user.id,
-      username: user.username,
-      action: "auth.login",
-      resourceType: "console",
-    })
   },
 }))
 

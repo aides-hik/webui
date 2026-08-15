@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { ServerFormDialog } from "@/components/server/ServerFormDialog"
 import { PermissionGuard } from "@/components/auth/PermissionGuard"
 import { Button } from "@/components/ui/button"
-import { servers } from "@/lib/mock-data"
+import { useServers } from "@/hooks/useServers"
 import { PERMISSIONS } from "@/types/auth"
 
 const ACTIONS = [
@@ -46,6 +46,7 @@ const ACTIONS = [
 export function QuickActions() {
   const [addOpen, setAddOpen] = useState(false)
   const navigate = useNavigate()
+  const { servers } = useServers()
 
   const handleAction = (action: (typeof ACTIONS)[number]["action"]) => {
     switch (action) {

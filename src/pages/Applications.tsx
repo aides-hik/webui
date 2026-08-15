@@ -1,17 +1,43 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { AppWindow } from "lucide-react"
+import { toast } from "sonner"
 
+import { applicationApi } from "@/api/application"
 import { ApplicationTable } from "@/components/application/ApplicationTable"
 import { PageContainer } from "@/components/common/PageContainer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { applications as initialApplications } from "@/lib/mock-data"
-import type { Application, ApplicationAction, ApplicationStatus } from "@/types/application"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { Application, ApplicationAction } from "@/types/application"
 
 /**
  * 应用管理 — 部署在服务器上的应用
+ * 数据:applicationApi(Mock/Real 自动切换)
  */
 export function Applications() {
-  const [list, setList] = useState<Application[]>(initialApplications)
+  const [list, setList] = useState<Application[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    applicationApi
+      .list()
+      .then((apps) => {
+        if (!cancelled) setList(apps)
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          toast.error("加载应用列表失败", {
+            description: err instanceof Error ? err.message : "未知错误",
+          })
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const stats = useMemo(() => {
     const running = list.filter((a) => a.status === "running").length
@@ -19,15 +45,15 @@ export function Applications() {
     return { total: list.length, running, failed }
   }, [list])
 
-  const handleStatusChange = (app: Application, action: ApplicationAction) => {
-    setList((prev) =>
-      prev.map((a) => {
-        if (a.id !== app.id) return a
-        const status: ApplicationStatus =
-          action === "start" ? "running" : action === "stop" ? "stopped" : a.status === "running" ? "stopped" : "running"
-        return { ...a, status, updatedAt: "刚刚" }
+  const handleStatusChange = async (app: Application, action: ApplicationAction) => {
+    try {
+      const updated = await applicationApi.changeStatus(app.id, action)
+      setList((prev) => prev.map((a) => (a.id === updated.id ? updated : a)))
+    } catch (err) {
+      toast.error("操作失败", {
+        description: err instanceof Error ? err.message : "未知错误",
       })
-    )
+    }
   }
 
   return (
@@ -49,7 +75,15 @@ export function Applications() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <ApplicationTable applications={list} onStatusChange={handleStatusChange} />
+          {loading && list.length === 0 ? (
+            <div className="space-y-2 py-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : (
+            <ApplicationTable applications={list} onStatusChange={handleStatusChange} />
+          )}
         </CardContent>
       </Card>
     </PageContainer>

@@ -4,7 +4,6 @@ import { Play, RotateCcw, Square } from "lucide-react"
 import { toast } from "sonner"
 
 import { monitoringApi } from "@/api/monitoring"
-import { recordAudit } from "@/services/mockAudit"
 import { useAuthStore } from "@/stores/authStore"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -28,7 +27,7 @@ interface ContainerListProps {
 
 /**
  * Docker 容器列表 — 查看 / 启停 / 重启
- * 数据:monitoringApi.containers(未来经 Agent 实时同步)
+ * 数据:monitoringApi.containers / containerAction(审计在 mock 实现/服务端完成)
  */
 export function ContainerList({ serverId, className }: ContainerListProps) {
   const { data: initial, isLoading } = useQuery({
@@ -47,25 +46,37 @@ export function ContainerList({ serverId, className }: ContainerListProps) {
     return { total: list.length, running, stopped, exited }
   }, [list])
 
-  const act = (container: Container, next: ContainerStatus, label: string) => {
+  /** 乐观更新 + 下发操作;失败时回滚 */
+  const act = async (container: Container, next: ContainerStatus, label: string) => {
+    const action = label === "停止" ? "stop" : "start"
     setContainers((prev) =>
       (prev ?? initial ?? []).map((c) =>
         c.id === container.id ? { ...c, status: next } : c
       )
     )
-    recordAudit({
-      userId: currentUser?.id ?? "-",
-      username: currentUser?.username ?? "unknown",
-      action:
-        label === "停止" ? "container.stop" : label === "启动" ? "container.start" : "container.restart",
-      resourceType: "container",
-      resourceId: container.name,
-      serverId,
-      metadata: { image: container.image },
-    })
-    toast.success(`${container.name} 已${label}(mock)`, {
-      description: `操作经 Agent 下发 · ${container.image}`,
-    })
+    try {
+      await monitoringApi.containerAction(
+        container.id,
+        action,
+        currentUser
+          ? { userId: currentUser.id, username: currentUser.username }
+          : undefined,
+        serverId
+      )
+      toast.success(`${container.name} 已${label}(mock)`, {
+        description: `操作经 Agent 下发 · ${container.image}`,
+      })
+    } catch (err) {
+      // 回滚乐观更新
+      setContainers((prev) =>
+        (prev ?? initial ?? []).map((c) =>
+          c.id === container.id ? { ...container } : c
+        )
+      )
+      toast.error(`${container.name} 操作失败`, {
+        description: err instanceof Error ? err.message : "未知错误",
+      })
+    }
   }
 
   if (isLoading && !containers) {

@@ -12,17 +12,17 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import type { NewServer, Server } from "@/lib/mock-data"
+import type { NewServerInput, Server } from "@/types/server"
 
 interface ServerFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** 传入服务器则为编辑模式,否则为新增 */
   server?: Server | null
-  onSubmit: (data: NewServer) => void
+  onSubmit: (data: NewServerInput) => void
 }
 
-const EMPTY_FORM: NewServer = {
+const EMPTY_FORM: NewServerInput = {
   name: "",
   ip: "",
   region: "ap-east-1",
@@ -41,7 +41,7 @@ export function ServerFormDialog({
   server,
   onSubmit,
 }: ServerFormDialogProps) {
-  const [form, setForm] = useState<NewServer>(EMPTY_FORM)
+  const [form, setForm] = useState<NewServerInput>(EMPTY_FORM)
   const isEdit = Boolean(server)
 
   useEffect(() => {
@@ -61,7 +61,7 @@ export function ServerFormDialog({
     }
   }, [open, server])
 
-  const set = <K extends keyof NewServer>(key: K, value: NewServer[K]) =>
+  const set = <K extends keyof NewServerInput>(key: K, value: NewServerInput[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
 
   const handleSubmit = () => {

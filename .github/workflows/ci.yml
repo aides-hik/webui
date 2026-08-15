@@ -45,6 +45,9 @@ jobs:
       - name: Verify permission module coverage (≥100%)
         run: node .github/scripts/check-permission-coverage.mjs
 
+      - name: Verify mock data boundary (UI 层不直连 mock)
+        run: node .github/scripts/check-mock-boundary.mjs
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:

@@ -54,6 +54,12 @@ export interface AuditInput {
   metadata?: Record<string, unknown>
 }
 
+/** 审计操作者(由调用方透传;真实后端以 Token 为准,忽略此字段) */
+export interface AuditActor {
+  userId: string
+  username: string
+}
+
 /** 操作类型中文标签 */
 export const ACTION_LABELS: Record<AuditAction, string> = {
   "auth.login": "用户登录",

@@ -9,6 +9,9 @@ const BASE_URL = (
   import.meta.env.VITE_API_BASE_URL as string | undefined
 )?.replace(/\/+$/, "") ?? ""
 
+/** 是否 Mock 模式(未配置 VITE_API_BASE_URL)。UI 层可据此隐藏 Mock 专属功能。 */
+export const IS_MOCK = !import.meta.env.VITE_API_BASE_URL
+
 /* ---------- Auth Interceptor ---------- */
 
 type TokenProvider = () => string | null

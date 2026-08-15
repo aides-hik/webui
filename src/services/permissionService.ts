@@ -8,12 +8,34 @@
       - "all"      → 全部资源
       - "team"     → 资源 ownerTeamId ∈ 用户 teamIds
       - "assigned" → 资源在用户的显式分配列表(scopes 含对应权限)
+
+   数据来源:assignments / serverTeamMap 由 api/access 通过
+   setScopeDataProvider 注入(Mock 为 mockPermission 数据,真实后端
+   由服务端返回),本模块保持纯逻辑、不依赖任何 mock 数据。
    ============================================================ */
 
-import { assignments, serverTeamMap } from "@/services/mockPermission"
 import type { PermissionId, User } from "@/types/auth"
 import type { Server } from "@/types/server"
-import type { ServerScope } from "@/types/team"
+import type { ServerAssignment, ServerScope } from "@/types/team"
+
+/** 资源范围判定所需的数据(由数据层注入) */
+export interface ScopeData {
+  /** 显式服务器分配(role.scope === "assigned" 的用户) */
+  assignments: ServerAssignment[]
+  /** 服务器 → 归属团队映射(team 范围判定) */
+  serverTeamMap: Record<string, string>
+}
+
+let scopeData: ScopeData = { assignments: [], serverTeamMap: {} }
+
+/**
+ * 注册资源范围数据提供者。
+ * 由 api/access 在模块加载时注册(Mock:mockPermission;真实:服务端数据),
+ * 须先于任何权限判定执行 —— 应用入口 main.tsx 与测试 setup 均引入 api 桶。
+ */
+export function setScopeDataProvider(data: ScopeData) {
+  scopeData = data
+}
 
 /* ---------- 权限 ↔ 服务器级 scope 映射 ---------- */
 
@@ -27,7 +49,9 @@ const PERMISSION_TO_SCOPE: Partial<Record<PermissionId, ServerScope>> = {
 
 /** 用户对某服务器的显式分配 */
 function getAssignment(user: User, serverId: string) {
-  return assignments.find((a) => a.userId === user.id && a.serverId === serverId)
+  return scopeData.assignments.find(
+    (a) => a.userId === user.id && a.serverId === serverId
+  )
 }
 
 /**
@@ -65,7 +89,7 @@ export function userHasPermission(
       case "team": {
         if (!role.permissions.includes(permission)) break
         // 资源归属团队 → 用户所属团队
-        const ownerTeamId = serverTeamMap[resourceId]
+        const ownerTeamId = scopeData.serverTeamMap[resourceId]
         if (ownerTeamId && user.teamIds.includes(ownerTeamId)) return true
         break
       }

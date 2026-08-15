@@ -2,7 +2,7 @@ import { RefreshCw, Rocket, Settings, User } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import type { ActivityEvent, ActivityType } from "@/lib/mock-data"
+import type { ActivityEvent, ActivityType } from "@/types/server"
 
 const TYPE_META: Record<ActivityType, { icon: React.ElementType; color: string; badge: string; label: string }> = {
   reboot: { icon: RefreshCw, color: "text-primary", badge: "bg-primary/10 text-primary", label: "重启" },

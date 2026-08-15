@@ -27,3 +27,15 @@ export interface MetricsSnapshot {
   labels: string[]
   lastUpdated: number
 }
+
+/** 存储类指标(Swap / 磁盘 IO / 磁盘占用) */
+export interface StorageMetrics {
+  swap: number[]
+  diskRead: number[]
+  diskWrite: number[]
+  /** 当前磁盘占用率(%) */
+  diskUsage: number
+  /** 磁盘占用率历史(迷你图) */
+  diskHistory: number[]
+  labels: string[]
+}

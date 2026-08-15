@@ -12,22 +12,23 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { roles } from "@/services/mockAuth"
 import { cn } from "@/lib/utils"
-import type { User } from "@/types/auth"
+import type { Role, User } from "@/types/auth"
 
 interface UserFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** 传入用户则为编辑模式,否则为创建 */
   user?: User | null
+  /** 可选角色列表(由 Users 页经 userApi.listRoles 提供) */
+  roles: Role[]
   onSubmit: (data: { username: string; email: string; roleIds: string[]; status: User["status"] }) => void
 }
 
 /**
  * 创建 / 编辑用户 — 支持多角色分配
  */
-export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormDialogProps) {
+export function UserFormDialog({ open, onOpenChange, user, roles, onSubmit }: UserFormDialogProps) {
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [roleIds, setRoleIds] = useState<string[]>([])

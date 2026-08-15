@@ -23,14 +23,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useServers } from "@/hooks/useServers"
 import { useServerStore } from "@/stores/serverStore"
 import { useAuthStore } from "@/stores/authStore"
-import { recordAudit } from "@/services/mockAudit"
 import { filterAccessibleServers } from "@/services/permissionService"
 import { PERMISSIONS } from "@/types/auth"
 import type { NewServerInput, Server } from "@/types/server"
 
 /**
  * 服务器管理 — 搜索 / 添加 / 编辑 / 删除 / 进入详情
- * 数据:useServers + serverStore(CRUD 经 serverApi,Mock/Real 自动切换)
+ * 数据:useServers + serverStore(CRUD 经 serverApi,Mock/Real 自动切换;
+ * 审计由 api mock 实现/服务端完成,页面不再直接写审计)
  */
 export function Servers() {
   const { servers: allServers, loading } = useServers()
@@ -46,16 +46,9 @@ export function Servers() {
     return filterAccessibleServers(currentUser, allServers)
   }, [allServers, currentUser, isAdmin])
 
-  const audit = (action: "server.create" | "server.update" | "server.delete", resourceId: string, metadata?: Record<string, unknown>) => {
-    recordAudit({
-      userId: currentUser?.id ?? "-",
-      username: currentUser?.username ?? "unknown",
-      action,
-      resourceType: "server",
-      resourceId,
-      metadata,
-    })
-  }
+  const actor = currentUser
+    ? { userId: currentUser.id, username: currentUser.username }
+    : undefined
   const [query, setQuery] = useState("")
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Server | null>(null)
@@ -85,8 +78,7 @@ export function Servers() {
 
   const handleAdd = async (data: NewServerInput) => {
     try {
-      const server = await addServer(data)
-      audit("server.create", server.id, { name: server.name, ip: server.ip })
+      await addServer(data, actor)
       toast.success("服务器已添加", {
         description: `${data.name} · ${data.ip}`,
       })
@@ -100,8 +92,7 @@ export function Servers() {
   const handleEdit = async (data: NewServerInput) => {
     if (!editing) return
     try {
-      await updateServer(editing.id, data)
-      audit("server.update", editing.id, { name: data.name, ip: data.ip })
+      await updateServer(editing.id, data, actor)
       toast.success("服务器已更新", {
         description: `${data.name} · ${data.ip}`,
       })
@@ -116,8 +107,7 @@ export function Servers() {
   const handleDelete = async () => {
     if (!deleting) return
     try {
-      await removeServer(deleting.id)
-      audit("server.delete", deleting.id, { name: deleting.name, ip: deleting.ip })
+      await removeServer(deleting.id, actor)
       toast.success("服务器已删除", { description: deleting.name })
       setDeleting(null)
     } catch (err) {

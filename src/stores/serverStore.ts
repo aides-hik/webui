@@ -9,6 +9,7 @@ import { create } from "zustand"
 
 import { serverApi } from "@/api/server"
 import { wsService } from "@/services/websocket"
+import type { AuditActor } from "@/types/audit"
 import type { NewServerInput, Server } from "@/types/server"
 
 interface ServerState {
@@ -19,9 +20,9 @@ interface ServerState {
   selectedServerId: string | null
 
   fetchServers: () => Promise<void>
-  addServer: (input: NewServerInput) => Promise<Server>
-  updateServer: (id: string, patch: Partial<Server>) => Promise<void>
-  removeServer: (id: string) => Promise<void>
+  addServer: (input: NewServerInput, actor?: AuditActor) => Promise<Server>
+  updateServer: (id: string, patch: Partial<Server>, actor?: AuditActor) => Promise<void>
+  removeServer: (id: string, actor?: AuditActor) => Promise<void>
   selectServer: (id: string | null) => void
 }
 
@@ -45,9 +46,9 @@ export const useServerStore = create<ServerState>((set) => ({
     }
   },
 
-  addServer: async (input) => {
+  addServer: async (input, actor) => {
     try {
-      const created = await serverApi.create(input)
+      const created = await serverApi.create(input, actor)
       set((s) => ({ servers: [created, ...s.servers] }))
       return created
     } catch (err) {
@@ -56,9 +57,9 @@ export const useServerStore = create<ServerState>((set) => ({
     }
   },
 
-  updateServer: async (id, patch) => {
+  updateServer: async (id, patch, actor) => {
     try {
-      const updated = await serverApi.update(id, patch)
+      const updated = await serverApi.update(id, patch, actor)
       set((s) => ({
         servers: s.servers.map((x) => (x.id === id ? updated : x)),
       }))
@@ -68,9 +69,9 @@ export const useServerStore = create<ServerState>((set) => ({
     }
   },
 
-  removeServer: async (id) => {
+  removeServer: async (id, actor) => {
     try {
-      await serverApi.remove(id)
+      await serverApi.remove(id, actor)
       set((s) => ({
         servers: s.servers.filter((x) => x.id !== id),
         selectedServerId: s.selectedServerId === id ? null : s.selectedServerId,

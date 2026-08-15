@@ -5,13 +5,9 @@ import { AnimatedContainer } from "@/components/common/AnimatedContainer"
 import { Sparkline } from "@/components/metrics/ResourceChart"
 import { Card, CardContent } from "@/components/ui/card"
 import { useServers } from "@/hooks/useServers"
+import { useMetrics } from "@/hooks/useMetrics"
 import { filterAccessibleServers } from "@/services/permissionService"
 import { useAuthStore } from "@/stores/authStore"
-import {
-  cpuHistory,
-  memoryHistory,
-  networkInHistory,
-} from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
 
 interface StatCardData {
@@ -25,7 +21,21 @@ interface StatCardData {
   footnote: string
 }
 
-function buildStats(serverCount: number, onlineCount: number, avgCpu: number, avgMem: number, avgDisk: number, netIn: number): StatCardData[] {
+interface SparkData {
+  cpu: number[]
+  memory: number[]
+  networkIn: number[]
+}
+
+function buildStats(
+  serverCount: number,
+  onlineCount: number,
+  avgCpu: number,
+  avgMem: number,
+  avgDisk: number,
+  netIn: number,
+  sparks: SparkData
+): StatCardData[] {
   return [
     {
       label: "在线服务器",
@@ -43,7 +53,7 @@ function buildStats(serverCount: number, onlineCount: number, avgCpu: number, av
       delta: "-4.2%",
       deltaUp: false,
       icon: Cpu,
-      spark: cpuHistory.slice(-12),
+      spark: sparks.cpu.slice(-12),
       sparkColor: "text-primary",
       footnote: "集群平均负载",
     },
@@ -53,7 +63,7 @@ function buildStats(serverCount: number, onlineCount: number, avgCpu: number, av
       delta: "+1.8%",
       deltaUp: true,
       icon: MemoryStick,
-      spark: memoryHistory.slice(-12),
+      spark: sparks.memory.slice(-12),
       sparkColor: "text-primary",
       footnote: "集群平均占用",
     },
@@ -73,7 +83,7 @@ function buildStats(serverCount: number, onlineCount: number, avgCpu: number, av
       delta: "+12.4%",
       deltaUp: true,
       icon: Activity,
-      spark: networkInHistory.slice(-12),
+      spark: sparks.networkIn.slice(-12),
       sparkColor: "text-primary",
       footnote: "入站 · 实时",
     },
@@ -82,10 +92,11 @@ function buildStats(serverCount: number, onlineCount: number, avgCpu: number, av
 
 /**
  * Dashboard 概览统计卡(5 张)
- * 数据来自 useServers(Zustand store,WebSocket 实时更新)
+ * 数据来自 useServers(Zustand store,WebSocket 实时更新)+ useMetrics(Query + WS)
  */
 export function DashboardStats() {
   const { servers: allServers, loading } = useServers()
+  const { data: metrics } = useMetrics("24h")
   const user = useAuthStore((s) => s.user)
   const isAdmin = useAuthStore((s) => s.hasRole("admin"))
 
@@ -106,9 +117,15 @@ export function DashboardStats() {
   const avgDisk = servers.length
     ? Math.round(servers.reduce((a, s) => a + s.disk, 0) / servers.length)
     : 0
-  const netIn = networkInHistory[networkInHistory.length - 1]
+  const netIn = metrics?.networkIn[metrics.networkIn.length - 1] ?? 0
 
-  const stats = buildStats(servers.length, online, avgCpu, avgMem, avgDisk, netIn)
+  const sparks: SparkData = {
+    cpu: metrics?.cpu ?? [],
+    memory: metrics?.memory ?? [],
+    networkIn: metrics?.networkIn ?? [],
+  }
+
+  const stats = buildStats(servers.length, online, avgCpu, avgMem, avgDisk, netIn, sparks)
 
   if (loading && servers.length === 0) {
     return (

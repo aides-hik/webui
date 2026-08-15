@@ -1,9 +1,10 @@
 import { toast } from "sonner"
 import { Cpu, HardDrive, MemoryStick, RotateCcw, SquareTerminal } from "lucide-react"
 
+import { serverApi } from "@/api/server"
 import { PermissionGuard } from "@/components/auth/PermissionGuard"
-import { recordAudit } from "@/services/mockAudit"
 import { useAuthStore } from "@/stores/authStore"
+import { useMetrics } from "@/hooks/useMetrics"
 import { PERMISSIONS } from "@/types/auth"
 import { ResourceChart } from "@/components/metrics/ResourceChart"
 import { ContainerList } from "@/components/server/ContainerList"
@@ -13,13 +14,6 @@ import { TerminalTabs } from "@/components/terminal/TerminalTabs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  cpuHistory,
-  historyLabels,
-  memoryHistory,
-  networkInHistory,
-  networkOutHistory,
-} from "@/lib/mock-data"
 import type { Server } from "@/types/server"
 
 /* ================= Overview ================= */
@@ -50,15 +44,12 @@ function OverviewTab({ server }: { server: Server }) {
               variant="outline"
               size="sm"
               onClick={() => {
-                recordAudit({
-                  userId: currentUser?.id ?? "-",
-                  username: currentUser?.username ?? "unknown",
-                  action: "server.restart",
-                  resourceType: "server",
-                  resourceId: server.id,
-                  serverId: server.id,
-                  metadata: { name: server.name },
-                })
+                void serverApi.restart(
+                  server.id,
+                  currentUser
+                    ? { userId: currentUser.id, username: currentUser.username }
+                    : undefined
+                )
                 toast.success("重启命令已下发", {
                   description: `${server.name} 将在 60s 内重启(mock)`,
                 })
@@ -128,28 +119,30 @@ function OverviewTab({ server }: { server: Server }) {
 /* ================= Metrics ================= */
 
 function MetricsTab() {
+  const { data: metrics } = useMetrics("24h")
+  const labels = metrics?.labels ?? []
   return (
     <div className="space-y-4">
       <ResourceChart
         title="CPU 使用率"
         unit="%"
-        labels={historyLabels}
-        series={[{ name: "CPU", color: "text-primary", data: cpuHistory }]}
+        labels={labels}
+        series={[{ name: "CPU", color: "text-primary", data: metrics?.cpu ?? [] }]}
       />
       <div className="grid gap-4 lg:grid-cols-2">
         <ResourceChart
           title="内存使用率"
           unit="%"
-          labels={historyLabels}
-          series={[{ name: "内存", color: "text-primary", data: memoryHistory }]}
+          labels={labels}
+          series={[{ name: "内存", color: "text-primary", data: metrics?.memory ?? [] }]}
         />
         <ResourceChart
           title="网络流量"
           unit=" MB/s"
-          labels={historyLabels}
+          labels={labels}
           series={[
-            { name: "入站", color: "text-primary", data: networkInHistory },
-            { name: "出站", color: "text-success", data: networkOutHistory },
+            { name: "入站", color: "text-primary", data: metrics?.networkIn ?? [] },
+            { name: "出站", color: "text-success", data: metrics?.networkOut ?? [] },
           ]}
         />
       </div>

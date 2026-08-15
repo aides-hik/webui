@@ -102,6 +102,10 @@ export const swapHistory = [18, 20, 19, 24, 28, 26, 25, 30, 33, 31, 29, 34, 38, 
 export const diskIOReadHistory = [120, 180, 150, 260, 310, 240, 200, 380, 420, 330, 280, 450, 510, 460, 380, 560, 620, 540, 470, 390, 320, 280, 240, 210]
 export const diskIOWriteHistory = [80, 110, 90, 160, 210, 170, 130, 240, 280, 220, 170, 300, 340, 290, 230, 360, 410, 350, 290, 240, 190, 160, 130, 110]
 
+/** 磁盘占用率历史(迷你图)与当前值 */
+export const diskUsageHistory = [54, 55, 55, 56, 57, 58, 60, 61, 62]
+export const currentDiskUsage = 62
+
 /* ---------- 应用 ---------- */
 
 export const applications: Application[] = [

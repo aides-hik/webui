@@ -18,7 +18,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer"
-import { getAuditLogs, getAuditLogsAll, getAuditOptions } from "@/services/auditService"
+import { auditApi } from "@/api/audit"
 import { useAuthStore } from "@/stores/authStore"
 import { exportCsv, exportJson } from "@/utils/exportCsv"
 import { ACTION_LABELS, type AuditLog } from "@/types/audit"
@@ -188,7 +188,7 @@ export function Audit() {
   const { data, isLoading } = useQuery({
     queryKey,
     queryFn: () =>
-      getAuditLogs({
+      auditApi.getLogs({
         page: state.page,
         pageSize: state.pageSize,
         scopeUsername,
@@ -205,7 +205,7 @@ export function Audit() {
   const { data: allData } = useQuery({
     queryKey: ["audit-all", scopeUsername, state.filters],
     queryFn: () =>
-      getAuditLogsAll({
+      auditApi.getAll({
         scopeUsername,
         username: state.filters.username,
         action: state.filters.action,
@@ -230,14 +230,19 @@ export function Audit() {
     }
   }, [allData])
 
-  const options = useMemo(() => getAuditOptions(scopeUsername), [scopeUsername])
+  /* 筛选条件选项(异步获取;真实后端映射 GET /api/audit/options) */
+  const { data: options } = useQuery({
+    queryKey: ["audit-options", scopeUsername],
+    queryFn: () => auditApi.getOptions(scopeUsername),
+    staleTime: 60_000,
+  })
 
   /* 导出:当前筛选条件下的全量数据 */
   const handleExport = async (format: "csv" | "json") => {
     if (exporting) return
     setExporting(true)
     try {
-      const logs = await getAuditLogsAll({
+      const logs = await auditApi.getAll({
         scopeUsername,
         username: state.filters.username,
         action: state.filters.action,
@@ -317,7 +322,7 @@ export function Audit() {
         <AuditFilter
           values={state.filters}
           onChange={handleFiltersChange}
-          options={options}
+          options={options ?? { users: [], actions: [], servers: [] }}
           resultCount={data?.total ?? 0}
           onExport={handleExport}
           exporting={exporting}

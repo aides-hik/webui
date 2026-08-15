@@ -11,6 +11,10 @@
 import {
   activityEvents,
   cpuHistory,
+  currentDiskUsage,
+  diskIOReadHistory,
+  diskIOWriteHistory,
+  diskUsageHistory,
   dockerContainers,
   executeMockCommand,
   historyLabels,
@@ -19,13 +23,15 @@ import {
   networkInHistory,
   networkOutHistory,
   servers as seedServers,
+  swapHistory,
 } from "@/lib/mock-data"
 import { recordAudit } from "@/services/mockAudit"
 import type { ServerApi } from "@/api/server"
 import type { MonitoringApi } from "@/api/monitoring"
 import type { AgentStatus, AgentToken } from "@/types/agent"
-import type { Container } from "@/types/docker"
-import type { MetricsRange, MetricsSnapshot } from "@/types/metrics"
+import type { AuditActor } from "@/types/audit"
+import type { Container, ContainerAction, ContainerStatus } from "@/types/docker"
+import type { MetricsRange, MetricsSnapshot, StorageMetrics } from "@/types/metrics"
 import type {
   TerminalCloseMessage,
   TerminalInputMessage,
@@ -33,6 +39,7 @@ import type {
   TerminalResizeMessage,
 } from "@/types/terminal"
 import type {
+  ActivityEvent,
   LogEntry,
   LogLevel,
   NewServerInput,
@@ -403,7 +410,7 @@ class MockServer {
       return { ...found }
     },
 
-    create: async (input: NewServerInput): Promise<Server> => {
+    create: async (input: NewServerInput, actor?: AuditActor): Promise<Server> => {
       await delay()
       const server: Server = {
         id: `srv-${Date.now().toString(36)}`,
@@ -426,23 +433,61 @@ class MockServer {
         environment: "staging",
       }
       this.servers = [server, ...this.servers]
+      this.audit({
+        username: actor?.username ?? "-",
+        action: "server.create",
+        resourceType: "server",
+        resourceId: server.id,
+        metadata: { name: server.name, ip: server.ip },
+      })
       this.emit("servers:update", this.servers.map((s) => ({ ...s })))
       return { ...server }
     },
 
-    update: async (id: string, patch: Partial<Server>): Promise<Server> => {
+    update: async (id: string, patch: Partial<Server>, actor?: AuditActor): Promise<Server> => {
       await delay()
       const index = this.servers.findIndex((s) => s.id === id)
       if (index === -1) throw new Error(`服务器不存在: ${id}`)
       this.servers[index] = { ...this.servers[index], ...patch, id }
+      this.audit({
+        username: actor?.username ?? "-",
+        action: "server.update",
+        resourceType: "server",
+        resourceId: id,
+        metadata: { name: this.servers[index].name, ip: this.servers[index].ip },
+      })
       this.emit("servers:update", this.servers.map((s) => ({ ...s })))
       return { ...this.servers[index] }
     },
 
-    remove: async (id: string): Promise<void> => {
+    remove: async (id: string, actor?: AuditActor): Promise<void> => {
       await delay()
+      const server = this.servers.find((s) => s.id === id)
+      if (!server) throw new Error(`服务器不存在: ${id}`)
+      this.audit({
+        username: actor?.username ?? "-",
+        action: "server.delete",
+        resourceType: "server",
+        resourceId: id,
+        metadata: { name: server.name, ip: server.ip },
+      })
       this.servers = this.servers.filter((s) => s.id !== id)
       this.emit("servers:update", this.servers.map((s) => ({ ...s })))
+    },
+
+    restart: async (id: string, actor?: AuditActor): Promise<Server> => {
+      await delay()
+      const server = this.servers.find((s) => s.id === id)
+      if (!server) throw new Error(`服务器不存在: ${id}`)
+      this.audit({
+        username: actor?.username ?? "-",
+        action: "server.restart",
+        resourceType: "server",
+        resourceId: server.id,
+        serverId: server.id,
+        metadata: { name: server.name },
+      })
+      return { ...server }
     },
 
     /* ---------- Agent 接入 ---------- */
@@ -517,6 +562,53 @@ class MockServer {
     containers: async (_serverId?: string): Promise<Container[]> => {
       await delay()
       return this.containers.map((c) => ({ ...c }))
+    },
+
+    containerAction: async (
+      containerId: string,
+      action: ContainerAction,
+      actor?: AuditActor,
+      serverId?: string
+    ): Promise<Container> => {
+      await delay()
+      const index = this.containers.findIndex((c) => c.id === containerId)
+      if (index === -1) throw new Error(`容器不存在: ${containerId}`)
+      const prev = this.containers[index]
+      const status: ContainerStatus =
+        action === "start" ? "running" : action === "stop" ? "stopped" : "running"
+      this.containers[index] = { ...prev, status }
+      this.audit({
+        username: actor?.username ?? "-",
+        action:
+          action === "start"
+            ? "container.start"
+            : action === "stop"
+              ? "container.stop"
+              : "container.restart",
+        resourceType: "container",
+        resourceId: prev.name,
+        serverId,
+        metadata: { image: prev.image },
+      })
+      this.emit("container:update", this.containers.map((c) => ({ ...c })))
+      return { ...this.containers[index] }
+    },
+
+    getStorageMetrics: async (): Promise<StorageMetrics> => {
+      await delay()
+      return {
+        swap: [...swapHistory],
+        diskRead: [...diskIOReadHistory],
+        diskWrite: [...diskIOWriteHistory],
+        diskUsage: currentDiskUsage,
+        diskHistory: [...diskUsageHistory],
+        labels: [...historyLabels],
+      }
+    },
+
+    getActivityEvents: async (): Promise<ActivityEvent[]> => {
+      await delay(80)
+      return activityEvents.map((e) => ({ ...e }))
     },
 
     logs: async (_serverId?: string): Promise<LogEntry[]> => {

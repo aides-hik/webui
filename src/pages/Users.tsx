@@ -1,32 +1,58 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Plus, Users as UsersIcon } from "lucide-react"
 import { toast } from "sonner"
 
+import { userApi } from "@/api/user"
 import { PermissionGuard } from "@/components/auth/PermissionGuard"
 import { PageContainer } from "@/components/common/PageContainer"
 import { UserFormDialog } from "@/components/user/UserFormDialog"
 import { UserTable } from "@/components/user/UserTable"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { mockUsers as initialUsers, roles } from "@/services/mockAuth"
-import { recordAudit } from "@/services/mockAudit"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useAuthStore } from "@/stores/authStore"
-import { PERMISSIONS, type User } from "@/types/auth"
-import type { AuditAction } from "@/types/audit"
-
-const roleNameOf = (id: string) => roles.find((r) => r.id === id)
+import { PERMISSIONS, type Role, type User } from "@/types/auth"
 
 /**
  * 用户与权限管理
  * - 创建 / 编辑用户,多角色分配
- * - 禁用 / 启用用户
+ * - 禁用 / 启用用户(审计由 api mock 实现/服务端完成)
  * - 管理操作受 user.manage 权限控制
  */
 export function Users() {
   const currentUser = useAuthStore((s) => s.user)
-  const [list, setList] = useState<User[]>(initialUsers)
+  const [list, setList] = useState<User[]>([])
+  const [roles, setRoles] = useState<Role[]>([])
+  const [loading, setLoading] = useState(true)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<User | null>(null)
+
+  const actor = currentUser
+    ? { userId: currentUser.id, username: currentUser.username }
+    : undefined
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([userApi.list(), userApi.listRoles()])
+      .then(([users, roleList]) => {
+        if (cancelled) return
+        setList(users)
+        setRoles(roleList)
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          toast.error("加载用户失败", {
+            description: err instanceof Error ? err.message : "未知错误",
+          })
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const stats = useMemo(() => {
     const counts: { admin: number; operator: number; viewer: number } = {
@@ -46,68 +72,49 @@ export function Users() {
     }
   }, [list])
 
-  const auditUser = (action: AuditAction, resourceId: string, metadata?: Record<string, unknown>) => {
-    recordAudit({
-      userId: currentUser?.id ?? "-",
-      username: currentUser?.username ?? "unknown",
-      action,
-      resourceType: "user",
-      resourceId,
-      metadata,
-    })
-  }
-
-  const handleCreate = (data: { username: string; email: string; roleIds: string[]; status: User["status"] }) => {
-    const user: User = {
-      id: `usr-${Date.now().toString(36)}`,
-      username: data.username,
-      email: data.email,
-      roles: data.roleIds.map((id) => roleNameOf(id)!).filter(Boolean),
-      teamIds: [],
-      status: data.status,
-      lastLogin: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
+  const handleCreate = async (data: { username: string; email: string; roleIds: string[]; status: User["status"] }) => {
+    try {
+      const user = await userApi.create(data, actor)
+      setList((prev) => [user, ...prev])
+      toast.success("用户已创建", { description: `${user.username} · ${user.email}` })
+    } catch (err) {
+      toast.error("创建用户失败", {
+        description: err instanceof Error ? err.message : "未知错误",
+      })
     }
-    setList((prev) => [user, ...prev])
-    auditUser("user.create", user.username)
-    toast.success("用户已创建", { description: `${user.username} · ${user.email}` })
   }
 
-  const handleEdit = (data: { username: string; email: string; roleIds: string[]; status: User["status"] }) => {
+  const handleEdit = async (data: { username: string; email: string; roleIds: string[]; status: User["status"] }) => {
     if (!editing) return
-    const rolesChanged =
-      data.roleIds.length !== editing.roles.length ||
-      data.roleIds.some((id, i) => id !== editing.roles[i]?.id)
-    setList((prev) =>
-      prev.map((u) =>
-        u.id === editing.id
-          ? {
-              ...u,
-              username: data.username,
-              email: data.email,
-              roles: data.roleIds.map((id) => roleNameOf(id)!).filter(Boolean),
-              status: data.status,
-            }
-          : u
-      )
-    )
-    if (rolesChanged) auditUser("user.role_change", editing.username)
-    auditUser("user.update", editing.username)
-    toast.success("用户已更新", { description: data.username })
-    setEditing(null)
+    try {
+      const updated = await userApi.update(editing.id, data, actor)
+      setList((prev) => prev.map((u) => (u.id === updated.id ? updated : u)))
+      toast.success("用户已更新", { description: data.username })
+      setEditing(null)
+    } catch (err) {
+      toast.error("更新用户失败", {
+        description: err instanceof Error ? err.message : "未知错误",
+      })
+    }
   }
 
-  const handleToggleStatus = (user: User) => {
+  const handleToggleStatus = async (user: User) => {
     if (user.username === "admin") {
       toast.error("不能禁用 admin 账号")
       return
     }
     const next: User["status"] = user.status === "active" ? "disabled" : "active"
-    setList((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: next } : u)))
-    auditUser("user.disable", user.username)
-    toast.success(next === "disabled" ? "用户已禁用" : "用户已启用", {
-      description: user.username,
-    })
+    try {
+      const updated = await userApi.update(user.id, { status: next }, actor)
+      setList((prev) => prev.map((u) => (u.id === updated.id ? updated : u)))
+      toast.success(next === "disabled" ? "用户已禁用" : "用户已启用", {
+        description: user.username,
+      })
+    } catch (err) {
+      toast.error("操作失败", {
+        description: err instanceof Error ? err.message : "未知错误",
+      })
+    }
   }
 
   return (
@@ -139,14 +146,22 @@ export function Users() {
           <span className="text-caption">角色:管理员 / 运维 / 只读</span>
         </CardHeader>
         <CardContent className="pt-0">
-          <UserTable
-            users={list}
-            onEdit={(user) => {
-              setEditing(user)
-              setFormOpen(true)
-            }}
-            onToggleStatus={handleToggleStatus}
-          />
+          {loading && list.length === 0 ? (
+            <div className="space-y-2 py-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : (
+            <UserTable
+              users={list}
+              onEdit={(user) => {
+                setEditing(user)
+                setFormOpen(true)
+              }}
+              onToggleStatus={handleToggleStatus}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -157,6 +172,7 @@ export function Users() {
           if (!open) setEditing(null)
         }}
         user={editing}
+        roles={roles}
         onSubmit={editing ? handleEdit : handleCreate}
       />
     </PageContainer>

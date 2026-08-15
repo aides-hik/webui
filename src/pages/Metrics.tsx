@@ -1,31 +1,38 @@
+import { useQuery } from "@tanstack/react-query"
 import { Cpu, HardDrive, MemoryStick, Network } from "lucide-react"
 
+import { monitoringApi } from "@/api/monitoring"
 import { MetricCard } from "@/components/metrics/MetricCard"
 import { NetworkChart } from "@/components/metrics/NetworkChart"
 import { ResourceChart } from "@/components/metrics/ResourceChart"
 import { PageContainer } from "@/components/common/PageContainer"
 import { useMetrics } from "@/hooks/useMetrics"
-import {
-  diskIOReadHistory,
-  diskIOWriteHistory,
-  historyLabels,
-  swapHistory,
-} from "@/lib/mock-data"
 
 const last = (arr: number[] | undefined) => (arr && arr.length > 0 ? arr[arr.length - 1] : 0)
 
 /**
  * 监控中心 — 服务器实时指标
  * CPU / 内存(Swap)/ 磁盘(IO)/ 网络(上下行)
+ * 存储类指标经 monitoringApi.getStorageMetrics(Mock/Real 自动切换)
  */
 export function Metrics() {
   const { data: metrics, isLoading } = useMetrics("24h")
+  const { data: storage } = useQuery({
+    queryKey: ["storage-metrics"],
+    queryFn: () => monitoringApi.getStorageMetrics(),
+    staleTime: 60_000,
+  })
 
   const cpuNow = last(metrics?.cpu)
   const memNow = last(metrics?.memory)
-  const diskNow = 62
+  const diskNow = storage?.diskUsage ?? 0
   const netInNow = last(metrics?.networkIn)
   const netOutNow = last(metrics?.networkOut)
+  const labels = storage?.labels ?? []
+  const swap = storage?.swap ?? []
+  const diskRead = storage?.diskRead ?? []
+  const diskWrite = storage?.diskWrite ?? []
+  const diskHistory = storage?.diskHistory ?? []
 
   return (
     <PageContainer size="wide" className="py-2">
@@ -61,7 +68,7 @@ export function Metrics() {
           delta="+0.6%"
           deltaUp
           icon={HardDrive}
-          spark={[54, 55, 55, 56, 57, 58, 60, 61, 62]}
+          spark={diskHistory}
         />
         <MetricCard
           label="网络吞吐"
@@ -80,34 +87,34 @@ export function Metrics() {
         <ResourceChart
           title="CPU 使用率(历史趋势)"
           unit="%"
-          labels={historyLabels}
+          labels={labels}
           series={[{ name: "CPU", color: "text-primary", data: metrics?.cpu ?? [] }]}
           loading={isLoading}
         />
         <ResourceChart
           title="内存使用率(含 Swap)"
           unit="%"
-          labels={historyLabels}
+          labels={labels}
           series={[
             { name: "内存", color: "text-primary", data: metrics?.memory ?? [] },
-            { name: "Swap", color: "text-warning", data: swapHistory },
+            { name: "Swap", color: "text-warning", data: swap },
           ]}
           loading={isLoading}
         />
         <ResourceChart
           title="磁盘 IO"
           unit=" MB/s"
-          labels={historyLabels}
+          labels={labels}
           series={[
-            { name: "读", color: "text-primary", data: diskIOReadHistory },
-            { name: "写", color: "text-success", data: diskIOWriteHistory },
+            { name: "读", color: "text-primary", data: diskRead },
+            { name: "写", color: "text-success", data: diskWrite },
           ]}
         />
         <NetworkChart
           title="网络流量(上传 / 下载)"
           upload={metrics?.networkOut ?? []}
           download={metrics?.networkIn ?? []}
-          labels={historyLabels}
+          labels={labels}
           loading={isLoading}
         />
       </div>

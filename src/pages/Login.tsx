@@ -3,6 +3,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom"
 import { Boxes, KeyRound, Loader2, ShieldCheck, Wrench, Eye } from "lucide-react"
 import { toast } from "sonner"
 
+import { PageLoader } from "@/components/common/PageLoader"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -37,6 +38,7 @@ export function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const user = useAuthStore((s) => s.user)
+  const initializing = useAuthStore((s) => s.initializing)
   const login = useAuthStore((s) => s.login)
   const loginAs = useAuthStore((s) => s.loginAs)
 
@@ -45,6 +47,11 @@ export function Login() {
   const [loading, setLoading] = useState(false)
 
   const from = (location.state as { from?: string } | null)?.from ?? "/dashboard"
+
+  /* 持久化会话恢复中:避免登录表单闪现后跳转 */
+  if (initializing) {
+    return <PageLoader />
+  }
 
   if (user) {
     return <Navigate to={from} replace />
