@@ -1,30 +1,12 @@
 import { cn } from "@/lib/utils"
-import type { ServerStatus as ServerStatusType } from "@/lib/mock-data"
+import { StatusBadge, type StatusTone } from "@/components/ui/status-badge"
+import type { ServerStatus as ServerStatusType } from "@/types/server"
 
-const STATUS_META: Record<
-  ServerStatusType,
-  { label: string; dot: string; badge: string }
-> = {
-  online: {
-    label: "在线",
-    dot: "bg-success",
-    badge: "border-transparent bg-success/15 text-success",
-  },
-  offline: {
-    label: "离线",
-    dot: "bg-muted-foreground/50",
-    badge: "border-transparent bg-muted text-muted-foreground",
-  },
-  maintenance: {
-    label: "维护中",
-    dot: "bg-warning",
-    badge: "border-transparent bg-warning/15 text-warning",
-  },
-  degraded: {
-    label: "降级",
-    dot: "bg-warning",
-    badge: "border-transparent bg-warning/15 text-warning",
-  },
+const STATUS_META: Record<ServerStatusType, { label: string; tone: StatusTone }> = {
+  online: { label: "在线", tone: "success" },
+  offline: { label: "离线", tone: "neutral" },
+  maintenance: { label: "维护中", tone: "warning" },
+  degraded: { label: "降级", tone: "warning" },
 }
 
 /** 服务器运行状态指示(圆点 + 文字) */
@@ -38,7 +20,7 @@ export function ServerStatus({
   const meta = STATUS_META[status]
   return (
     <span className={cn("inline-flex items-center gap-1.5", className)}>
-      <span className={cn("h-1.5 w-1.5 rounded-full", meta.dot)} aria-hidden />
+      <span className={cn("h-1.5 w-1.5 rounded-full", meta.tone === "success" ? "bg-success" : meta.tone === "warning" ? "bg-warning" : "bg-muted-foreground/50")} aria-hidden />
       <span className="text-xs font-medium text-muted-foreground">
         {meta.label}
       </span>
@@ -49,17 +31,7 @@ export function ServerStatus({
 /** 状态徽章(表格/卡片中使用) */
 export function ServerStatusBadge({ status }: { status: ServerStatusType }) {
   const meta = STATUS_META[status]
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
-        meta.badge
-      )}
-    >
-      <span className={cn("h-1.5 w-1.5 rounded-full", meta.dot)} aria-hidden />
-      {meta.label}
-    </span>
-  )
+  return <StatusBadge tone={meta.tone} label={meta.label} />
 }
 
 /** 资源使用率对应的颜色(按阈值) */

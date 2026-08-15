@@ -1,24 +1,15 @@
-import { useNavigate } from "react-router-dom"
-import { Cpu, HardDrive, MemoryStick, MoreHorizontal } from "lucide-react"
+import { Cpu, HardDrive, MemoryStick } from "lucide-react"
 
 import { ResourceBar, ServerStatusBadge } from "@/components/server/ServerStatus"
+import { ServerActions } from "@/components/server/ServerActions"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
 } from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import type { Server } from "@/lib/mock-data"
-import { useAuthStore } from "@/stores/authStore"
+import type { Server } from "@/types/server"
 
 interface ServerCardProps {
   server: Server
@@ -31,9 +22,6 @@ interface ServerCardProps {
  * 用于 Servers 页;包含资源条与快捷操作
  */
 export function ServerCard({ server, onEdit, onDelete }: ServerCardProps) {
-  const navigate = useNavigate()
-  const hasPermission = useAuthStore((s) => s.hasPermission)
-
   return (
     <Card className="flex h-full flex-col shadow-soft-sm transition-all hover:-translate-y-0.5 hover:shadow-soft">
       <CardHeader className="flex-row items-start justify-between space-y-0 p-4 pb-2">
@@ -46,35 +34,12 @@ export function ServerCard({ server, onEdit, onDelete }: ServerCardProps) {
             {server.ip}
           </p>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 shrink-0"
-              aria-label={`${server.name} 操作`}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigate(`/servers/${server.id}`)}>
-              查看详情
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onEdit?.(server)}>编辑</DropdownMenuItem>
-            {hasPermission("server.delete") && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={() => onDelete?.(server)}
-                >
-                  删除
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <ServerActions
+          server={server}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          triggerClassName="h-7 w-7 shrink-0"
+        />
       </CardHeader>
 
       <CardContent className="flex-1 space-y-2.5 p-4 pt-0">

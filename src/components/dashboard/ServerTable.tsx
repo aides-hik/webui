@@ -1,16 +1,8 @@
 import { useNavigate } from "react-router-dom"
-import { MoreHorizontal } from "lucide-react"
 
 import { ResourceBar, ServerStatusBadge } from "@/components/server/ServerStatus"
+import { ServerActions } from "@/components/server/ServerActions"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   Table,
   TableBody,
@@ -19,8 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { Server } from "@/lib/mock-data"
-import { useAuthStore } from "@/stores/authStore"
+import type { Server } from "@/types/server"
 import { cn } from "@/lib/utils"
 
 interface ServerTableProps {
@@ -35,8 +26,6 @@ interface ServerTableProps {
  */
 export function ServerTable({ servers, onEdit, onDelete }: ServerTableProps) {
   const navigate = useNavigate()
-  const hasPermission = useAuthStore((s) => s.hasPermission)
-  const canDelete = hasPermission("server.delete")
 
   return (
     <div className="overflow-x-auto">
@@ -84,37 +73,7 @@ export function ServerTable({ servers, onEdit, onDelete }: ServerTableProps) {
               </Badge>
             </TableCell>
             <TableCell onClick={(e) => e.stopPropagation()}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    aria-label={`${server.name} 操作`}
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate(`/servers/${server.id}`)}>
-                    查看详情
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onEdit?.(server)}>
-                    编辑
-                  </DropdownMenuItem>
-                  {canDelete && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => onDelete?.(server)}
-                      >
-                        删除
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <ServerActions server={server} onEdit={onEdit} onDelete={onDelete} />
             </TableCell>
           </TableRow>
         ))}

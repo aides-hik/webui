@@ -1,6 +1,7 @@
 import { Eye } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { StatusBadge } from "@/components/ui/status-badge"
 import {
   Table,
   TableBody,
@@ -10,7 +11,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ACTION_LABELS, type AuditLog } from "@/types/audit"
-import { cn } from "@/lib/utils"
 
 interface AuditTableProps {
   logs: AuditLog[]
@@ -75,16 +75,12 @@ export function AuditTable({ logs, onView }: AuditTableProps) {
                 </span>
               </TableCell>
               <TableCell>
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                    log.status === "success"
-                      ? "border-transparent bg-success/15 text-success"
-                      : "border-transparent bg-destructive/15 text-destructive"
-                  )}
-                >
-                  {log.status === "success" ? "成功" : "失败"}
-                </span>
+                <StatusBadge
+                  tone={log.status === "success" ? "success" : "danger"}
+                  label={log.status === "success" ? "成功" : "失败"}
+                  size="2xs"
+                  showDot={false}
+                />
               </TableCell>
               <TableCell>
                 <span className="font-mono text-xs text-muted-foreground">{log.ip}</span>

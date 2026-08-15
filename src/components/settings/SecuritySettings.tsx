@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { cn } from "@/lib/utils"
+import { Toggle } from "@/components/ui/toggle"
 
 interface ApiToken {
   id: string
@@ -144,23 +144,11 @@ export function SecuritySettings() {
                 className="h-8 w-16 rounded-md border bg-background px-2 text-center text-sm"
               />
               <span className="text-xs text-muted-foreground">次</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={lockoutEnabled}
-                onClick={() => setLockoutEnabled(!lockoutEnabled)}
-                className={cn(
-                  "relative h-5 w-9 rounded-full transition-colors",
-                  lockoutEnabled ? "bg-primary" : "bg-muted"
-                )}
-              >
-                <span
-                  className={cn(
-                    "absolute top-0.5 h-4 w-4 rounded-full bg-background shadow-sm transition-transform",
-                    lockoutEnabled ? "translate-x-[18px]" : "translate-x-0.5"
-                  )}
-                />
-              </button>
+              <Toggle
+                checked={lockoutEnabled}
+                onChange={setLockoutEnabled}
+                label="失败锁定"
+              />
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={() => save("登录策略", `失败锁定 ${lockoutEnabled ? lockoutAttempts + " 次" : "已关闭"}`)}>

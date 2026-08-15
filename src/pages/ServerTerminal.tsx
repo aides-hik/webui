@@ -105,7 +105,8 @@ export function ServerTerminal() {
 
       <div className="grid gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <TerminalTabs serverId={server.id} serverName={server.name} />
+          {/* key=server.id:切换服务器时重建实例,各服务器的会话互不串扰 */}
+          <TerminalTabs key={server.id} serverId={server.id} serverName={server.name} />
         </div>
 
         <div className="space-y-4">

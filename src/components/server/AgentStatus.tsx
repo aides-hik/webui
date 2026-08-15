@@ -3,29 +3,15 @@ import { Link } from "react-router-dom"
 import { AlertCircle, CheckCircle2, Clock } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge, type StatusTone } from "@/components/ui/status-badge"
 import { serverApi } from "@/api/server"
 import { cn } from "@/lib/utils"
 import type { AgentState } from "@/types/agent"
 
-const STATE_META: Record<
-  AgentState,
-  { label: string; dot: string; badge: string }
-> = {
-  installed: {
-    label: "Agent 已安装",
-    dot: "bg-success",
-    badge: "border-transparent bg-success/15 text-success",
-  },
-  pending: {
-    label: "等待安装",
-    dot: "bg-warning",
-    badge: "border-transparent bg-warning/15 text-warning",
-  },
-  uninstalled: {
-    label: "未安装",
-    dot: "bg-muted-foreground/50",
-    badge: "border-transparent bg-muted text-muted-foreground",
-  },
+const STATE_META: Record<AgentState, { label: string; tone: StatusTone }> = {
+  installed: { label: "Agent 已安装", tone: "success" },
+  pending: { label: "等待安装", tone: "warning" },
+  uninstalled: { label: "未安装", tone: "neutral" },
 }
 
 function formatHeartbeat(iso: string | null): string {
@@ -68,10 +54,7 @@ export function AgentStatus({ serverId, showInstallHint = true, className }: Age
   return (
     <div className={cn("space-y-2", className)}>
       <div className="flex flex-wrap items-center gap-2">
-        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium", meta.badge)}>
-          <span className={cn("h-1.5 w-1.5 rounded-full", meta.dot)} aria-hidden />
-          {meta.label}
-        </span>
+        <StatusBadge tone={meta.tone} label={meta.label} />
         {agent.version && (
           <span className="font-mono text-[10px] text-muted-foreground">
             v{agent.version}
